@@ -1,0 +1,26 @@
+# Environment variables
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+
+# Model folders and large files
+trained-model/
+*.pt
+*.bin
+*.safetensors
+*.h5
+*.pkl
+*.zip
+*.json
+*.txt
+
+# TensorBoard logs
+runs/
+
+# OS files
+.DS_Store

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Social Insight — Recent Analyses</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Recent Analyses</h1>
+    <p><a href="/">← Back to Analyze</a></p>
+
+    <table id="analysesTable" class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Text (truncated)</th>
+          <th>Sentiment</th>
+          <th>Confidence</th>
+          <th>Toxic</th>
+          <th>Toxicity Score</th>
+          <th>Created At</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div id="loading">Loading...</div>
+    <div id="error" class="error hidden"></div>
+  </div>
+
+  <script>
+    async function loadAnalyses() {
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('error').classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/analyses');
+        if (!res.ok) throw new Error('Failed to fetch analyses: ' + res.status);
+        const rows = await res.json();
+        const tbody = document.querySelector('#analysesTable tbody');
+        tbody.innerHTML = '';
+
+        rows.forEach(r => {
+          const tr = document.createElement('tr');
+          const truncated = (r.text || '').length > 80 ? (r.text || '').slice(0,80) + '…' : (r.text || '');
+          tr.innerHTML = `
+            <td>${r.id}</td>
+            <td title="${(r.text || '').replace(/"/g, '&quot;')}">${truncated}</td>
+            <td>${r.sentiment}</td>
+            <td>${(r.confidence || 0).toFixed(3)}</td>
+            <td>${r.toxic ? 'Yes' : 'No'}</td>
+            <td>${(r.toxicity_score || 0).toFixed(3)}</td>
+            <td>${r.created_at}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById('loading').style.display = 'none';
+      } catch (err) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').textContent = err.message || 'Unknown error';
+        document.getElementById('error').classList.remove('hidden');
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', loadAnalyses);
+  </script>
+</body>
+</html>

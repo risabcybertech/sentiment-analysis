@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Social Insight — Analyze</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Social Insight — Quick Analyze</h1>
+
+    <form id="analyzeForm">
+      <label for="text">Paste post / comment text:</label>
+      <textarea id="text" name="text" rows="6" placeholder="Type or paste text here..."></textarea>
+      <div class="actions">
+        <button type="submit">Analyze</button>
+        <button type="button" id="viewHistory">View Recent Analyses</button>
+      </div>
+    </form>
+
+    <div id="result" class="result hidden">
+      <h2>Result</h2>
+      <p><strong>Sentiment:</strong> <span id="res-sentiment"></span></p>
+      <p><strong>Confidence:</strong> <span id="res-confidence"></span></p>
+      <p><strong>Toxic:</strong> <span id="res-toxic"></span></p>
+      <p><strong>Toxicity score:</strong> <span id="res-toxscore"></span></p>
+    </div>
+
+    <div id="error" class="error hidden"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('analyzeForm');
+    const resultDiv = document.getElementById('result');
+    const errDiv = document.getElementById('error');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errDiv.classList.add('hidden');
+      resultDiv.classList.add('hidden');
+
+      const text = document.getElementById('text').value.trim();
+      if (!text) {
+        errDiv.textContent = 'Please enter some text to analyze.';
+        errDiv.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({text})
+        });
+
+        if (!res.ok) {
+          const t = await res.text();
+          throw new Error('Server error: ' + (t || res.status));
+        }
+        const data = await res.json();
+        document.getElementById('res-sentiment').textContent = data.sentiment;
+        document.getElementById('res-confidence').textContent = data.confidence;
+        document.getElementById('res-toxic').textContent = data.toxic;
+        document.getElementById('res-toxscore').textContent = data.toxicity_score;
+        resultDiv.classList.remove('hidden');
+      } catch (err) {
+        errDiv.textContent = err.message || 'Unknown error';
+        errDiv.classList.remove('hidden');
+      }
+    });
+
+    document.getElementById('viewHistory').addEventListener('click', () => {
+      window.location.href = '/dashboard';
+    });
+  </script>
+</body>
+</html>
