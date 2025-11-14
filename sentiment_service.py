@@ -6,8 +6,6 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 
 # -----------------------------------------------------
-# Load environment variables
-# -----------------------------------------------------
 load_dotenv()
 HF_API_KEY = os.getenv("HF_API_KEY")
 
@@ -20,31 +18,26 @@ BASE_URL = "https://api-inference.huggingface.co/models/"
 SENTIMENT_MODEL = "cardiffnlp/twitter-roberta-base-sentiment-latest"
 
 # -----------------------------------------------------
-# Load YOUR local fine-tuned hate/toxicity model
+# Load LOCAL MODEL from project folder
 # -----------------------------------------------------
 
-# 🔥 SET THIS TO YOUR MODEL FOLDER (no guesswork)
-LOCAL_MODEL_PATH = r"C:\Users\ADMIN\Desktop\pro\social_insight_backend\trained-model"
+LOCAL_MODEL_PATH = os.path.join(os.path.dirname(__file__), "trained-model")
 
 local_tokenizer = AutoTokenizer.from_pretrained(LOCAL_MODEL_PATH)
 local_model = AutoModelForSequenceClassification.from_pretrained(LOCAL_MODEL_PATH)
-local_model.eval()  # important
+local_model.eval()
 
 def predict_local_toxicity(text: str):
-    """Run inference using your fine-tuned local hate speech model."""
     inputs = local_tokenizer(text, return_tensors="pt", truncation=True, padding=True)
 
     with torch.no_grad():
         logits = local_model(**inputs).logits
 
     probs = torch.softmax(logits, dim=1).cpu().numpy()[0]
-    label = int(probs.argmax())   # 1 = toxic, 0 = clean
+    label = int(probs.argmax())
 
     return label, float(probs[label])
 
-
-# -----------------------------------------------------
-# Remote sentiment (if you want to keep it)
 # -----------------------------------------------------
 def call_sentiment_model(text: str):
     resp = requests.post(BASE_URL + SENTIMENT_MODEL, headers=HEADERS, json={"inputs": text})
@@ -58,9 +51,6 @@ def call_sentiment_model(text: str):
 
     return None
 
-
-# -----------------------------------------------------
-# Main analysis function used by Flask
 # -----------------------------------------------------
 def analyze_text(text: str):
     text = text.strip()
@@ -73,10 +63,10 @@ def analyze_text(text: str):
             "toxicity_score": 0.0
         }
 
-    # 1️⃣ Your LOCAL TOXICITY MODEL
+    # 1️⃣ Local Toxicity Model
     tox_label, tox_score = predict_local_toxicity(text)
 
-    if tox_label == 1:  # your model: 1 = hate
+    if tox_label == 1:
         return {
             "sentiment": "toxic",
             "confidence": tox_score,
@@ -84,7 +74,7 @@ def analyze_text(text: str):
             "toxicity_score": tox_score
         }
 
-    # 2️⃣ Remote sentiment analysis (optional)
+    # 2️⃣ Remote Sentiment
     sent_resp = call_sentiment_model(text)
 
     if sent_resp and isinstance(sent_resp[0], list):
@@ -106,19 +96,9 @@ def analyze_text(text: str):
             "toxicity_score": tox_score
         }
 
-    # Fallback
     return {
         "sentiment": "neutral",
         "confidence": 0.0,
         "toxic": False,
         "toxicity_score": tox_score
     }
-
-
-# -----------------------------------------------------
-# Quick manual test
-# -----------------------------------------------------
-if __name__ == "__main__":
-    sample = "tu kitna bada chutiya hai"
-    print("Testing on:", sample)
-    print(analyze_text(sample))

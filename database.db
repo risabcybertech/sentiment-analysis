@@ -4,7 +4,7 @@ DB_PATH = "database.db"
 
 def get_connection():
     conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row   # return dictionary-like rows
+    conn.row_factory = sqlite3.Row  # return dictionary-like rows
     return conn
 
 def init_db():
